@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+
+<!-- ===================================================================== -->
+<!--                                                                       -->
+<!--  Log4j Configuration                                                  -->
+<!--                                                                       -->
+<!-- ===================================================================== -->
+
+<!--
+	| For more configuration information and examples see the Jakarta Log4j
+	| owebsite: http://jakarta.apache.org/log4j
+-->
+
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/" debug="false">
+
+	<!-- Setup Appenders -->
+	<appender name="LiveJournal-console" class="org.apache.log4j.ConsoleAppender">
+		<param name="Target" value="System.out" />
+		<param name="Threshold" value="DEGUG" />
+
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="[%d{ISO8601}] %-5p [%c{4}] %m%n" />
+		</layout>
+	</appender>
+<!--
+	<appender name="LiveJournal-xml-file" class="org.apache.log4j.DailyRollingFileAppender">
+		<param name="File" value="/logs/lj_log.xml" />
+		<param name="Append" value="true" />
+		<param name="Threshold" value="DEBUG" />
+
+		<param name="DatePattern" value="'_'yyyy-MM-dd'.wlg'" />		
+
+		<layout class="org.apache.log4j.xml.XMLLayout"/>
+	</appender>
+
+	<appender name="LiveJournal-NTEventLog" class="org.apache.log4j.nt.NTEventLogAppender">
+		<param name="Threshold" value="DEBUG" />
+
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="[%d{ISO8601}] %-5p [%c{4}] %m%n" />
+		</layout>
+	</appender>
+-->
+	<appender name="LiveJournal-log-file" class="org.apache.log4j.DailyRollingFileAppender">
+		<param name="File" value="logs/lj.log" />
+		<param name="Append" value="true" />
+		<param name="Threshold" value="DEBUG" />
+		
+		<param name="DatePattern" value="'_'yyyy-MM-dd'.log'" />		
+		
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="[%d{ISO8601}] %-5p [%c{5}] %m%n" />
+		</layout>
+	</appender>
+	
+	<!-- Apache Logging -->
+	<logger name="org.apache">
+		<level value="ERROR" />
+	</logger>
+
+	<!-- HttpClient Logging -->
+	<logger name="httpclient.wire">
+		<level value="ERROR" />
+	</logger>
+
+	<!-- Beans Logging -->
+	<logger name="beans.factory">
+		<level value="ERROR" />
+	</logger>
+
+	<!-- Setup the Root category -->
+	<root>
+<!--	<level value="DEBUG"/> -->
+		<appender-ref ref="LiveJournal-log-file"/>
+		<appender-ref ref="LiveJournal-console"/>
+<!--	<appender-ref ref="LiveJournal-xml-file"/> -->
+<!--	<appender-ref ref="LiveJournal-NTEventLog"/> -->
+	</root>
+
+</log4j:configuration>
