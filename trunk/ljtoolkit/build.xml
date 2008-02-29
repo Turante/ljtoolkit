@@ -1,0 +1,315 @@
+<project name="ljtoolkit" default="build">
+
+	<!-- setup some properties -->
+	<property name="src.dir" location="src" />
+	<property name="build.dir" location="build" />
+	<property name="build.classes.dir" location="${build.dir}/classes"/>
+	<property name="lib.dir" value="lib" />
+	<property name="reports.dir" value="${build.dir}/reports" />
+	<property name="dist.dir" value="dist" />
+	<property name="dist.dir.proj" value="${dist.dir}/ljtoolkit/ljtoolkit" />
+	<property name="api.doc.dir" value="${dist.dir.proj}/apidoc" />
+	<property environment="env"/>
+	<dirname property="this.dir" file="${ant.file}"/>
+
+	<!-- Test ouput configuration -->
+	<property name="test.src.dir" value="test" />
+	<property name="test.classes.dir" value="${build.dir}/tests" />
+	<property name="testng.output.dir" value="${reports.dir}/testng" />
+	<property name="junitreport.output.dir" value="${reports.dir}/junitreport" />
+
+	<!-- Time Stamp -->
+	<tstamp>
+		<format property="timestamp" pattern="MMddyyyy-hh:mm" />
+	</tstamp>
+
+	<!-- Define Compile and Test Classpath -->
+	<path id="compile.classpath">
+		<fileset dir="${lib.dir}">
+			<include name="**/*.jar"/>
+		</fileset>
+	</path>
+
+	<path id="test.compile.classpath">
+		<pathelement location="${test.classes.dir}"/>
+		<pathelement location="${build.classes.dir}"/>
+		<path refid="compile.classpath" />
+	</path>
+
+	<!-- Define TestNG tasks -->
+	<taskdef resource="testngtasks"
+		classpath="${lib.dir}/testng-5.5-jdk15.jar"/>
+
+	<!-- - - - - - - - - - - - - - - - - -
+          target: checkJavaHome
+         - - - - - - - - - - - - - - - - - -->
+	<target name="checkJavaHome" unless="env.JAVA_HOME">
+		<fail message="JAVA_HOME must be set!"/>
+	</target>
+
+	<!-- - - - - - - - - - - - - - - - - -
+          target: init.compile
+         - - - - - - - - - - - - - - - - - -->
+	<target name="init.compile">
+		<!-- Create time stamp -->
+		<tstamp/>
+		<mkdir dir="${build.dir}" />
+		<mkdir dir="${build.classes.dir}" />
+	</target>
+
+	<!-- - - - - - - - - - - - - - - - - -
+          target: init.compile.test
+         - - - - - - - - - - - - - - - - - -->
+	<target name="init.compile.test">
+		<!-- Create time stamp -->
+		<tstamp/>
+		<mkdir dir="${build.dir}" />
+		<mkdir dir="${build.classes.dir}" />
+		<mkdir dir="${testng.output.dir}" />
+		<mkdir dir="${test.src.dir}" />
+		<mkdir dir="${test.classes.dir}" />
+		<property name="testng.groups" value="service" />
+	</target>
+
+	<!-- - - - - - - - - - - - - - - - - -
+          target: compile
+         - - - - - - - - - - - - - - - - - -->
+	<target name="compile" depends="init.compile"
+		description="Compile the development source">
+
+		<javac
+			source="1.5"
+			srcdir="${src.dir}"
+			destdir="${build.classes.dir}"
+			encoding="cp1252"
+			debug="on"
+			classpathref="compile.classpath" />
+
+		<copy todir="${build.classes.dir}">
+			<fileset dir="${src.dir}">
+				<exclude name="**/*.java" />
+			</fileset>
+		</copy>
+
+	</target>
+
+	<!-- - - - - - - - - - - - - - - - - -
+          target: compile.test
+         - - - - - - - - - - - - - - - - - -->
+	<target name="compile.test" 
+			depends="compile"
+			description="Compile the test source">
+
+		<javac
+			source="1.5"
+			srcdir="${test.src.dir}:tools"
+			destdir="${test.classes.dir}"
+			encoding="cp1252"
+			debug="on"
+			classpathref="test.compile.classpath"
+      excludes="**/trm/tools/build/**"/>
+
+		<copy todir="${test.classes.dir}">
+			<fileset dir="${test.src.dir}">
+				<exclude name="**/*.java" />
+			</fileset>
+		</copy>
+	</target>
+
+	<!-- - - - - - - - - - - - - - - - - -
+          target: clean
+         - - - - - - - - - - - - - - - - - -->
+	<target name="clean"
+			description="Delete output directories">
+		<delete dir="${build.dir}" />
+		<delete dir="${dist.dir}"/>
+	</target>
+
+	<!-- - - - - - - - - - - - - - - - - -
+          target: clean.classes
+         - - - - - - - - - - - - - - - - - -->
+	<target name="clean.classes"
+		description="Delete class files to force a clean build">
+		<!-- Delete the build directory trees -->
+		<delete>
+			<fileset dir="${build.classes.dir}" >
+				<include name="**/*.class" />
+			</fileset>
+			<fileset dir="${test.classes.dir}" >
+				<include name="**/*.class" />
+			</fileset>
+		</delete>
+	</target>
+
+	<!-- - - - - - - - - - - - - - - - - -
+          target: test
+         - - - - - - - - - - - - - - - - - -->
+	<target name="test" 
+			depends="compile.test"
+			description="Executes the test cases" >
+
+		<echo message="Running test groups" />
+
+		<testng classpathref="test.compile.classpath"
+ 			outputDir="${testng.output.dir}"
+ 			haltOnFailure="${testng.haltonfailure}"
+ 			verbose="10"
+ 			groups="${testng.groups}" >
+
+			<classfileset dir="${test.classes.dir}" includes="**/*.class" />
+			<jvmarg value="-Dcom.sun.management.jmxremote=true" />
+			<jvmarg value="-Xms512m" />
+			<jvmarg value="-Xmx512m" />
+		</testng>
+	</target>
+
+	<!-- - - - - - - - - - - - - - - - - -
+          target: dist
+         - - - - - - - - - - - - - - - - - -->
+	<target name="dist" 
+			depends="build.clean, build.docs"
+			description="Generate the distribution" >
+
+		<echo message="Building classes and distribution" />
+
+		<!-- Copy binary jar to distribution -->
+		<mkdir dir="${dist.dir.proj}" />
+		<mkdir dir="${dist.dir.proj}/lib" />
+		<jar jarfile="${dist.dir.proj}/lib/ljtoolkit.jar" basedir="${build.dir}"/>
+		
+		<!-- Copy libs to distribution -->
+		<copy todir="${dist.dir.proj}/lib">
+			<fileset dir="${lib.dir}"/>
+		</copy>
+		
+		<!-- Copy src to distribution -->
+		<copy todir="${dist.dir.proj}/src">
+			<fileset dir="${src.dir}"/>
+		</copy>
+		
+		<!-- Copy support files to distribution -->
+		<copy file="build.xml" todir="${dist.dir.proj}"/>
+		<copy file="COPYING" todir="${dist.dir.proj}"/>
+		<copy file="README" todir="${dist.dir.proj}"/>
+		
+		<!-- Zip up the distribution -->
+		<zip 	destfile="${dist.dir}/ljtoolkit.zip"
+				basedir="${dist.dir}/ljtoolkit" />
+	</target>
+
+	<!-- - - - - - - - - - - - - - - - - -
+          target: build.docs
+         - - - - - - - - - - - - - - - - - -->
+	<target	name="build.docs" 
+			description="Build the javadocs for the source code.">
+		<javadoc	destdir="${api.doc.dir}" 
+					packagenames="org.ljtoolkit"
+					sourcepath="${src.dir}"
+					Author="true" version="true" Use="true" noindex="true"
+					Windowtitle="LJToolkit API"
+					Doctitle="LJToolkit API"
+					bottom="Copyright 2008 Troy Bourdon">
+			<arg line="-private" />
+			<fileset dir="${src.dir}">
+				<include name="**/*.java"/>
+			</fileset>
+		</javadoc>
+	</target>
+	
+	<!-- - - - - - - - - - - - - - - - - -
+          target: test.no.compile
+         - - - - - - - - - - - - - - - - - -->
+	<target name="test.no.compile"
+			description="Executes the test cases" >
+
+		<echo message="Running test groups" />
+
+		<testng classpathref="test.compile.classpath"
+ 			outputDir="${testng.output.dir}"
+ 			haltOnFailure="${testng.haltonfailure}"
+ 			verbose="10"
+ 			groups="${testng.groups}" >
+
+			<classfileset dir="${test.classes.dir}" includes="**/*.class" />
+			<jvmarg value="-Dcom.sun.management.jmxremote=true" />
+			<jvmarg value="-Xms512m" />
+			<jvmarg value="-Xmx512m" />
+		</testng>
+	</target>
+
+	<!-- - - - - - - - - - - - - - - - - -
+          target: test.report
+         - - - - - - - - - - - - - - - - - -->
+	<target name="test.report"
+			description="Generates reports for test cases" >
+
+		<echo message="Running junit test reports" />
+
+		<junitreport todir="${junitreport.output.dir}">
+			<fileset dir="${testng.output.dir}">
+				<include name="**/*test.xml"/>
+			</fileset>
+			<report format="noframes" todir="${junitreport.output.dir}"/>
+		</junitreport>
+	</target>
+
+	<!-- - - - - - - - - - - - - - - - - -
+          target: test.single
+         - - - - - - - - - - - - - - - - - -->
+	<target name="test.single" 
+			depends="compile.test"
+			description="Executes the test case named in ${testcase}" >
+
+		<echo message="Running ${testcase}" />
+		<echo message="library path: ${java.library.path}"/>
+
+		<testng classpathref="test.compile.classpath"
+ 			outputDir="${testng.output.dir}"
+ 			verbose="10"
+ 			haltonfailure="true"
+ 			failureproperty="test.failed">
+
+			<classfileset dir="${test.classes.dir}" includes="**/${testcase}.class" />
+			<jvmarg value="-Dcom.sun.management.jmxremote=true" />
+			<jvmarg value="-Xms512m" />
+			<jvmarg value="-Xmx512m" />
+		</testng>
+
+		<junitreport todir="${junitreport.output.dir}">
+			<fileset dir="${testng.output.dir}">
+				<include name="**/*test.xml"/>
+			</fileset>
+			<report format="noframes" todir="${junitreport.output.dir}"/>
+		</junitreport>
+		<fail message="One or more tests failed" if="${test.failed}"/>
+	</target>
+
+
+	<!-- - - - - - - - - - - - - - - - - -
+          Build targets
+         - - - - - - - - - - - - - - - - - -->
+	<target name="build" 
+			depends="compile"
+    		description="Build the source" />
+	
+	<target name="build.clean" 
+			depends="clean, build"
+			description="Build the source clean" />
+
+	<target name="build.test" 
+			depends="compile.test"
+			description="Build the test source" />
+	
+	<target name="build.clean.test" 
+			depends="clean, build.test"
+			description="Build the test source clean" />
+
+	<target name="run.test" 
+			depends="test"
+			description="Build source, test source and run all tests"/>
+
+	<target name="run.clean.test" 
+			depends="clean, test"
+			description="Clean, build source, test source and run all tests"/>
+
+</project>
