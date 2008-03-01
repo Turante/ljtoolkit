@@ -1,10 +1,12 @@
 <project name="ljtoolkit" default="build">
 
 	<!-- setup some properties -->
+	<property name="version.id" value="0.6.0"/>
 	<property name="src.dir" location="src" />
 	<property name="build.dir" location="build" />
 	<property name="build.classes.dir" location="${build.dir}/classes"/>
 	<property name="lib.dir" value="lib" />
+	<property name="bin.dir" value="bin" />
 	<property name="reports.dir" value="${build.dir}/reports" />
 	<property name="dist.dir" value="dist" />
 	<property name="dist.dir.proj" value="${dist.dir}/ljtoolkit/ljtoolkit" />
@@ -175,7 +177,19 @@
 		<!-- Copy binary jar to distribution -->
 		<mkdir dir="${dist.dir.proj}" />
 		<mkdir dir="${dist.dir.proj}/lib" />
-		<jar jarfile="${dist.dir.proj}/lib/ljtoolkit.jar" basedir="${build.dir}"/>
+		<jar 	jarfile="${dist.dir.proj}/lib/ljtoolkit.jar" basedir="${build.dir}/classes">
+			<manifest>
+				<attribute name="Main-Class" value="org.ljtoolkit.client.LJClient"/>
+				<attribute 	name="Class-Path" 
+							value="	commons-cli-1.1.jar 
+									commons-codec-1.3.jar
+									commons-collections.jar
+									commons-httpclient-3.1-rc1.jar
+									commons-lang.jar
+									commons-logging.jar
+									log4j-1.2.13.jar"/>
+			</manifest>			
+		</jar>
 		
 		<!-- Copy libs to distribution -->
 		<copy todir="${dist.dir.proj}/lib">
@@ -186,14 +200,20 @@
 		<copy todir="${dist.dir.proj}/src">
 			<fileset dir="${src.dir}"/>
 		</copy>
-		
+
+		<!-- Copy src to distribution -->
+		<copy todir="${dist.dir.proj}/bin">
+			<fileset dir="${bin.dir}"/>
+		</copy>
+
 		<!-- Copy support files to distribution -->
 		<copy file="build.xml" todir="${dist.dir.proj}"/>
 		<copy file="COPYING" todir="${dist.dir.proj}"/>
 		<copy file="README" todir="${dist.dir.proj}"/>
+		<copy file="CLIENT" todir="${dist.dir.proj}"/>
 		
 		<!-- Zip up the distribution -->
-		<zip 	destfile="${dist.dir}/ljtoolkit.zip"
+		<zip 	destfile="${dist.dir}/ljtoolkit_${version.id}.zip"
 				basedir="${dist.dir}/ljtoolkit" />
 	</target>
 

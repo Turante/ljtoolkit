@@ -10,5 +10,6 @@
 	<classpathentry kind="lib" path="lib/log4j-1.2.13.jar"/>
 	<classpathentry kind="lib" path="lib/testng-5.5-jdk15.jar"/>
 	<classpathentry kind="lib" path="lib/commons-codec-1.3.jar"/>
+	<classpathentry kind="lib" path="lib/commons-cli-1.1.jar"/>
 	<classpathentry kind="output" path="classes"/>
 </classpath>
