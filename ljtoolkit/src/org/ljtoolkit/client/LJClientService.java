@@ -42,6 +42,7 @@ import org.ljtoolkit.params.BaseEventParams;
 import org.ljtoolkit.params.GetEventParams;
 import org.ljtoolkit.params.TransformEventParams;
 import org.ljtoolkit.services.LiveJournalService;
+import org.ljtoolkit.utils.LJResourceBundle;
 
 /**
  * The purpose of this class is to provide services to the {@link org.ljtoolkit.client.LJClient} class.
@@ -54,6 +55,7 @@ import org.ljtoolkit.services.LiveJournalService;
  */
 public class LJClientService {
 	private static Log logger = LogFactory.getLog(LJClientService.class);
+	private static LJResourceBundle bundle = LJResourceBundle.getInstance("org.ljtoolkit.client");
 	
 	/**
 	 * Method called by the LJClient's main method to dispatch the desired action.
@@ -81,24 +83,19 @@ public class LJClientService {
 		// set timestamp
 		params.setTimestamp(new Date());
 		
-		String errMsg = null;
 		if(params.getSubject() != null && params.getEvent() != null) {
 			int eventId = 0;
 			try {
 				eventId = service.postEvent(params);
 			} catch (LiveJournalServiceException e) {
-				errMsg = "Trying to post event!";
-				logger.error("Error: " + errMsg, e);
-				System.err.println(buildErrorMessage(errMsg));
+				outputError(bundle.getResource("add.event.error.msg", e.getMessage()), e);
 			}
 			
 			assert(eventId != 0);	
-			String status = "Event post was successful; event id = " + eventId;
+			String status = bundle.getResource("add.event.status.msg", eventId);
 			System.out.println(buildStatusMessage(status));			
 		} else {
-			errMsg = "Errors occured and post was aborted";
-			logger.error(errMsg);
-			System.err.print(buildErrorMessage(errMsg));
+			outputError(bundle.getResource("add.event.error.unknown"));
 		}
 	}
 
@@ -118,22 +115,17 @@ public class LJClientService {
 		params.setAction(EventAction.EDIT);
 		params.setItemId(Integer.valueOf(cmdLine.getId()).intValue());
 		
-		String errMsg = null;
 		if(params.getSubject() != null && params.getEvent() != null) {
 			try {
 				service.editEvent(params);
 			} catch (LiveJournalServiceException e) {
-				errMsg = "Trying to edit an event!";
-				logger.error("Error: " + errMsg, e);
-				System.err.println(buildErrorMessage(errMsg));
+				outputError(bundle.getResource("edit.event.error.msg", e.getMessage()), e);
 			}
 			
-			String status = "Event edit was successful";
+			String status = bundle.getResource("edit.event.status.msg");
 			System.out.println(buildStatusMessage(status));			
 		} else {
-			errMsg = "Errors occured and event edit was aborted";
-			logger.error(errMsg);
-			System.err.print(buildErrorMessage(errMsg));
+			outputError(bundle.getResource("edit.event.error.unknown"));
 		}		
 	}
 
@@ -152,16 +144,13 @@ public class LJClientService {
 		params.setItemId(Integer.valueOf(cmdLine.getId()).intValue());
 		params.setAction(EventAction.DELETE);
 		
-		String errMsg = null;
 		try {
 			service.editEvent(params);
 		} catch (LiveJournalServiceException e) {
-			errMsg = "Trying to edit an event!";
-			logger.error("Error: " + errMsg, e);
-			System.err.println(buildErrorMessage(errMsg));
+			outputError(bundle.getResource("delete.event.error.msg", e.getMessage()), e);
 		}
 		
-		String status = "Deletion of event: " + params.getItemId() + " was successful";
+		String status = bundle.getResource("delete.event.status.msg", params.getItemId());
 		System.out.println(buildStatusMessage(status));					
 	}
 
@@ -181,14 +170,11 @@ public class LJClientService {
 		params.setTruncate(10);
 		params.setLineEndings(BaseEventParams.PC_LINE_ENDING);
 		
-		String errMsg = null;
 		try {
 			events = service.getEvents(params);
 			buildListEventsOutput(events);
 		} catch (LiveJournalServiceException e) {
-			errMsg = "Trying to edit an event";
-			logger.error("Error: " + errMsg, e);
-			System.err.println(buildErrorMessage(errMsg));
+			outputError(bundle.getResource("list.event.error.msg", e.getMessage()), e);
 		}
 	}
 
@@ -197,23 +183,16 @@ public class LJClientService {
 
 		userSetup(service, cmdLine);
 		
-		String errMsg = null;
 		try {
 			parseEventFile(params, cmdLine);
 		} catch (FileNotFoundException x) {
-			errMsg = "Unable to find the update file: " + cmdLine.getFilePath();
-			logger.error("Error: " + errMsg, x);
-			System.err.println(buildErrorMessage(errMsg));
+			outputError(bundle.getResource("parse.event.find.file.error", cmdLine.getFilePath()), x);
 			return false;
 		} catch (IOException x) {
-			errMsg = "Unable to close the update file";
-			logger.error("Error: " + errMsg, x);
-			System.err.println(buildErrorMessage(errMsg));
+			outputError(bundle.getResource("parse.event.close.file.error", cmdLine.getFilePath()), x);
 			return false;
 		} catch (MalformedPostFileException x) {
-			errMsg = "Malformed update file";
-			logger.error("Error: " + errMsg, x);
-			System.err.println(buildErrorMessage(errMsg));
+			outputError(bundle.getResource("parse.event.malformed.file.error", cmdLine.getFilePath()), x);
 			return false;
 		}
 		
@@ -277,13 +256,9 @@ public class LJClientService {
 				}
 			}
 		} catch (IOException e) {
-			errMsg = "Unable to read post file " + cmdLine.getFilePath();
-			logger.error("Error: " + errMsg);
-			System.err.println(buildErrorMessage(errMsg));
-		} catch (MalformedPostFileException x) {
-			errMsg = "Unable to parse event file " + cmdLine.getFilePath();
-			logger.error("Error: " + errMsg, x);
-			System.err.println(buildErrorMessage(errMsg));			
+			outputError(bundle.getResource("parse.event.read.file.error", cmdLine.getFilePath()), e);
+		} catch (MalformedPostFileException e) {
+			outputError(bundle.getResource("parse.event.malformed.file.error", cmdLine.getFilePath()), e);
 		} finally {
 			file.close();
 			buffer.close();			
@@ -305,15 +280,15 @@ public class LJClientService {
 		throws MalformedPostFileException {
 		
 		if(key == null) 
-			throw new MalformedPostFileException("No key on first line of post file");
+			throw new MalformedPostFileException(bundle.getResource("subject.param.no.key"));
 		
 		if(!key.equalsIgnoreCase("title")) {
-			throw new MalformedPostFileException("Title key not listed on first line");
+			throw new MalformedPostFileException(bundle.getResource("subject.param.no.title.key"));
 		} else {
 			if(title != null && title.length() > 0)
 				params.setSubject(title);
 			else
-				throw new MalformedPostFileException("No title provided");
+				throw new MalformedPostFileException(bundle.getResource("subject.param.no.title"));
 		}			
 	}
 
@@ -321,10 +296,10 @@ public class LJClientService {
 		throws MalformedPostFileException {
 	
 		if(key == null) 
-			throw new MalformedPostFileException("No security key on second line of post file");
+			throw new MalformedPostFileException(bundle.getResource("security.param.no.key"));
 		
 		if(!key.equalsIgnoreCase("security")) {
-			throw new MalformedPostFileException("Security key not listed on second line");
+			throw new MalformedPostFileException(bundle.getResource("security.param.no.key"));
 		} else {
 			if(security != null && security.length() > 0) {
 				if(security.equalsIgnoreCase("public"))
@@ -337,10 +312,10 @@ public class LJClientService {
 		throws MalformedPostFileException {
 
 		if(key == null) 
-			throw new MalformedPostFileException("No tags key on third line of post file");
+			throw new MalformedPostFileException(bundle.getResource("tags.param.no.key"));
 		
 		if(!key.equalsIgnoreCase("tags")) {
-			throw new MalformedPostFileException("Tags key not listed on third line");
+			throw new MalformedPostFileException(bundle.getResource("tags.param.no.key"));
 		} else {
 			if(tags != null && tags.length() > 0) {
 				tagsSetup(params, tags);				
@@ -353,6 +328,16 @@ public class LJClientService {
 		writer.outputLiveJournalEvents(events);
 	}
 	
+	private static void outputError(String message, Exception e) {
+		logger.error(message, e);
+		System.err.println(buildErrorMessage(message));		
+	}
+
+	private static void outputError(String message) {
+		logger.error(message);		
+		System.err.println(buildErrorMessage(message));		
+	}
+
 	private static String buildErrorMessage(String error) {
 		StringBuffer buffer = new StringBuffer();
 		buffer.append("!!! LJClient Error !\n");

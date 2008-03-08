@@ -651,7 +651,7 @@ public class LiveJournalService implements ILiveJournalService {
 		Map<String, String> responseMap = fetchResponseFromLiveJournal(user, challenge, "getevents");
 		
 		if(responseMap == null || responseMap.get("success").equalsIgnoreCase("FAIL")) {
-			throw new LiveJournalServiceException("Unable to get the requested events");
+			throw new LiveJournalServiceException(responseMap.get("errmsg"));
 		}
 
 		int eventCount = NumberUtils.toInt(responseMap.get("events_count"));
@@ -708,7 +708,8 @@ public class LiveJournalService implements ILiveJournalService {
 		Map<String, String> responseMap = fetchResponseFromLiveJournal(user, challenge, "editevent");
 		
 		if(responseMap != null && responseMap.get("success").equalsIgnoreCase("FAIL")) {
-			throw new LiveJournalServiceException("Unable to edit the given event: " + params.getItemId());
+			throw new LiveJournalServiceException(
+					"Edit event error, cause: " + responseMap.get("errmsg") + " for id: " + params.getItemId());
 		}
 
 		clearPost();
@@ -734,7 +735,7 @@ public class LiveJournalService implements ILiveJournalService {
 		Map<String, String> responseMap = fetchResponseFromLiveJournal(user, challenge, "postevent");
 		
 		if(responseMap != null && responseMap.get("success").equalsIgnoreCase("FAIL")) {
-			throw new LiveJournalServiceException("Unable to post the given event: " + params.getItemId());
+			throw new LiveJournalServiceException("Post event error, cause: " + responseMap.get("errmsg"));
 		}
 
 		clearPost();
@@ -762,9 +763,6 @@ public class LiveJournalService implements ILiveJournalService {
 			
 			rtnMap = LiveJournalUtils.convertFlatResponseToMap(getPost().getResponseBodyAsString());
 			
-			// Display response
-//			System.out.println("Response body: ");
-//			System.out.println(getPost().getResponseBodyAsString());
 		} catch (HttpException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
